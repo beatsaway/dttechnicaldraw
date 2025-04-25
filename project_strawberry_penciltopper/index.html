@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Strawberry Pencil Topper Designs</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f8f0e5;
+            padding: 0;
+            margin: 0;
+        }
+        
+        
+        h1 {
+            font-size: 1.8rem;
+            margin-bottom: 5px;
+        }
+        
+        a {
+            text-decoration: none;
+            color: #e65c4f;
+        }
+        
+        h2 {
+            font-size: 1.2rem;
+            font-weight: normal;
+            color: #6a6a6a;
+            margin-bottom: 5px;
+        }
+        
+        .container {
+            max-width: 95%;
+            margin: 0 auto;
+            padding: 0;
+            padding-top: 15px;
+        }
+        
+        .gallery {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            align-items: center;
+            margin-top: 0;
+        }
+        
+        .item {
+            display: flex;
+            flex-direction: column;
+            border-radius: 10px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            position: relative;
+            height: 90vh;
+            width: auto;
+            background-color: white;
+        }
+        
+        .item:hover {
+            transform: translateY(-5px);
+        }
+        
+        .item-content {
+            display: flex;
+            flex-direction: row;
+            height: 100%;
+            background-color: white;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .item-image-container {
+            flex: 2;
+            padding: 0;
+            overflow: hidden;
+            position: relative;
+            background-color: white;
+            height: 100%;
+            margin: 0;
+        }
+        
+        .item img {
+            width: auto;
+            height: 100%;
+            object-fit: contain;
+            display: block;
+            background-color: white;
+        }
+        
+        .item-title, .profile-title, .visual-elements-title {
+            padding: 10px;
+            text-align: center;
+            font-weight: bold;
+            color: #e65c4f;
+            background-color: white;
+            font-size: 1.8rem;
+            margin: 0;
+            border-radius: 8px;
+        }
+        
+        .profile-title, .visual-elements-title {
+            font-size: 1.4rem;
+            margin-bottom: 8px;
+        }
+        
+        .profile-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 0;
+            background-color: white;
+            min-width: 40vw;
+            max-width: 40vw;
+            margin: 0;
+        }
+        
+        .user-profile, .visual-elements {
+            padding: 10px;
+            background-color: white;
+            border-radius: 8px;
+            margin: 0;
+        }
+        
+        .profile-detail, .visual-element {
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+            font-size: 1.1rem;
+            line-height: 1.3;
+        }
+        
+        .profile-detail span, .visual-element span {
+            font-weight: bold;
+            margin-right: 5px;
+            color: #e65c4f;
+        }
+        
+        .visual-element::before {
+            content: "•";
+            color: #e65c4f;
+            margin-right: 8px;
+        }
+        
+        footer {
+            margin-top: 20px;
+            text-align: center;
+            color: #6a6a6a;
+            font-size: 0.9rem;
+        }
+        
+        @media (max-width: 768px) {
+            .item-content {
+                flex-direction: column;
+            }
+            
+            .gallery {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .controls {
+            text-align: center;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+        }
+        
+        .toggle-button {
+            background-color: #e65c4f;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background-color 0.3s;
+        }
+        
+        .toggle-button:hover {
+            background-color: #d44a3d;
+        }
+        
+        .toggle-button.active {
+            background-color: #4CAF50;
+        }
+        
+        .video-container {
+            text-align: center;
+            margin: 0 auto 20px;
+            width: auto;
+            display: flex;
+            justify-content: center;
+        }
+        
+        .video-container iframe {
+            border: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="controls">
+            <button id="autoScrollToggle" class="toggle-button">Enable Auto Scroll</button>
+        </div>
+        <div class="video-container">
+            <div id="player"></div>
+        </div>
+        <div class="gallery">
+            <div class="item">
+                <div class="item-content">
+                    <div class="item-image-container">
+                        <img src="img/strawberry1.jpg" alt="Classic Strawberry Pencil Topper">
+                    </div>
+                    <div class="profile-section">
+                        <div class="item-title">Classic Strawberry Pencil Topper</div>
+                        <div class="user-profile">
+                            <div class="profile-title">Target User Profile</div>
+                            <div class="profile-detail"><span>Age:</span> 12-16 years</div>
+                            <div class="profile-detail"><span>Gender:</span> Any</div>
+                            <div class="profile-detail"><span>Hobbies:</span> Drawing, coloring books</div>
+                            <div class="profile-detail"><span>Interests:</span> Still life, nature, Digital Art, Procreate</div>
+                            <div class="profile-detail"><span>Lifestyle:</span> Middle/high school student</div>
+                            <div class="profile-detail"><span>Culture:</span> YouTube Art community</div>
+                        </div>
+                        <div class="visual-elements">
+                            <div class="visual-elements-title">Possible Visual Elements Improvements</div>
+                            <div class="visual-element"><span>Color Palette:</span> More vibrant red with deeper green stem</div>
+                            <div class="visual-element"><span>Shape:</span> More organic, slightly more asymmetrical berry form</div>
+                            <div class="visual-element"><span>Texture:</span> Smoother with more subtle seed detailing</div>
+                            <div class="visual-element"><span>Style:</span> More realistic with enhanced shading</div>
+                            <div class="visual-element"><span>Details:</span> More delicate stem and leaf accents</div>
+                            <div class="visual-element"><span>Finish:</span> More glossy with brighter highlights</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="item">
+                <div class="item-content">
+                    <div class="item-image-container">
+                        <img src="img/strawberry2.jpg" alt="Baby Strawberry Pencil Topper">
+                    </div>
+                    <div class="profile-section">
+                        <div class="item-title">Baby Strawberry Pencil Topper</div>
+                        <div class="user-profile">
+                            <div class="profile-title">Target User Profile</div>
+                            <div class="profile-detail"><span>Age:</span> 7-10 years</div>
+                            <div class="profile-detail"><span>Gender:</span> Female</div>
+                            <div class="profile-detail"><span>Hobbies:</span> Anime, manga collecting, journaling</div>
+                            <div class="profile-detail"><span>Interests:</span> Cocomelon, Peppa Pig, Baby Shark</div>
+                            <div class="profile-detail"><span>Lifestyle:</span> Elementary school student</div>
+                            <div class="profile-detail"><span>Culture:</span> YouTube Kids</div>
+                        </div>
+                        <div class="visual-elements">
+                            <div class="visual-elements-title">Possible Visual Elements Improvements</div>
+                            <div class="visual-element"><span>Color Palette:</span> Softer pink with more pastel accents</div>
+                            <div class="visual-element"><span>Shape:</span> More rounded, more chibi-style proportions</div>
+                            <div class="visual-element"><span>Texture:</span> Smoother with more kawaii details</div>
+                            <div class="visual-element"><span>Style:</span> More cute and more cartoonish</div>
+                            <div class="visual-element"><span>Details:</span> More sparkly eyes and rosier cheeks</div>
+                            <div class="visual-element"><span>Finish:</span> More matte with more glitter accents</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="item">
+                <div class="item-content">
+                    <div class="item-image-container">
+                        <img src="img/strawberry3.jpg" alt="Vintage Strawberry Pencil Topper">
+                    </div>
+                    <div class="profile-section">
+                        <div class="item-title">Vintage Strawberry Pencil Topper</div>
+                        <div class="user-profile">
+                            <div class="profile-title">Target User Profile</div>
+                            <div class="profile-detail"><span>Age:</span> 25-40 years</div>
+                            <div class="profile-detail"><span>Gender:</span> Any</div>
+                            <div class="profile-detail"><span>Hobbies:</span> Composing, Reading, Playing Guitar</div>
+                            <div class="profile-detail"><span>Interests:</span> Vintage aesthetics, Indie music, Spotify</div>
+                            <div class="profile-detail"><span>Lifestyle:</span> Creative professional</div>
+                            <div class="profile-detail"><span>Culture:</span> Appreciates nostalgia and retro style</div>
+                        </div>
+                        <div class="visual-elements">
+                            <div class="visual-elements-title">Possible Visual Elements Improvements</div>
+                            <div class="visual-element"><span>Color Palette:</span> More muted red with deeper sepia undertones</div>
+                            <div class="visual-element"><span>Shape:</span> More classic with stronger art deco influences</div>
+                            <div class="visual-element"><span>Texture:</span> More aged patina effect</div>
+                            <div class="visual-element"><span>Style:</span> More retro with more modern twist</div>
+                            <div class="visual-element"><span>Details:</span> More ornamental patterns and filigree</div>
+                            <div class="visual-element"><span>Finish:</span> More distressed with more vintage sheen</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="item">
+                <div class="item-content">
+                    <div class="item-image-container">
+                        <img src="img/strawberry4.jpg" alt="Among Us Strawberry Pencil Topper">
+                    </div>
+                    <div class="profile-section">
+                        <div class="item-title">Among Us Strawberry Pencil Topper</div>
+                        <div class="user-profile">
+                            <div class="profile-title">Target User Profile</div>
+                            <div class="profile-detail"><span>Age:</span> 14-22 years</div>
+                            <div class="profile-detail"><span>Gender:</span> Female</div>
+                            <div class="profile-detail"><span>Hobbies:</span> Video games, gardening, streaming</div>
+                            <div class="profile-detail"><span>Interests:</span> Among Us, Fruit Ninja</div>
+                            <div class="profile-detail"><span>Lifestyle:</span> Gaming enthusiast, Student</div>
+                            <div class="profile-detail"><span>Culture:</span> Gaming community, Twitch, Discord</div>
+                        </div>
+                        <div class="visual-elements">
+                            <div class="visual-elements-title">Possible Visual Elements Improvements</div>
+                            <div class="visual-element"><span>Color Palette:</span> Brighter red with more neon accents</div>
+                            <div class="visual-element"><span>Shape:</span> More geometric with clearer Among Us silhouette</div>
+                            <div class="visual-element"><span>Texture:</span> Smoother with more pixel art details</div>
+                            <div class="visual-element"><span>Style:</span> More game-inspired minimalism</div>
+                            <div class="visual-element"><span>Details:</span> More visor reflection and backpack</div>
+                            <div class="visual-element"><span>Finish:</span> More glossy with stronger RGB lighting effect</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="item">
+                <div class="item-content">
+                    <div class="item-image-container">
+                        <img src="img/strawberry5.jpg" alt="Pineapple Strawberry Pencil Topper">
+                    </div>
+                    <div class="profile-section">
+                        <div class="item-title">Pineapple Strawberry Pencil Topper</div>
+                        <div class="user-profile">
+                            <div class="profile-title">Target User Profile</div>
+                            <div class="profile-detail"><span>Age:</span> 20-25 years</div>
+                            <div class="profile-detail"><span>Gender:</span> Any</div>
+                            <div class="profile-detail"><span>Hobbies:</span> Scrolling TikTok, Sharing memes</div>
+                            <div class="profile-detail"><span>Interests:</span> PPAP, Funny Memes</div>
+                            <div class="profile-detail"><span>Lifestyle:</span> College student, Partying</div>
+                            <div class="profile-detail"><span>Culture:</span> Gen Z</div>
+                        </div>
+                        <div class="visual-elements">
+                            <div class="visual-elements-title">Possible Visual Elements Improvements</div>
+                            <div class="visual-element"><span>Color Palette:</span> More tropical red with brighter yellow accents</div>
+                            <div class="visual-element"><span>Shape:</span> More hybrid pineapple-strawberry fusion</div>
+                            <div class="visual-element"><span>Texture:</span> More spiky crown with smoother body</div>
+                            <div class="visual-element"><span>Style:</span> More meme-inspired surrealism</div>
+                            <div class="visual-element"><span>Details:</span> More sunglasses and party hat</div>
+                            <div class="visual-element"><span>Finish:</span> More glossy with more UV reactive elements</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="item">
+                <div class="item-content">
+                    <div class="item-image-container">
+                        <img src="img/strawberry6.jpg" alt="Minecraft Strawberry Pencil Topper">
+                    </div>
+                    <div class="profile-section">
+                        <div class="item-title">Minecraft Strawberry Pencil Topper</div>
+                        <div class="user-profile">
+                            <div class="profile-title">Target User Profile</div>
+                            <div class="profile-detail"><span>Age:</span> 8-16 years</div>
+                            <div class="profile-detail"><span>Gender:</span> Any</div>
+                            <div class="profile-detail"><span>Hobbies:</span> Minecraft, Building, Crafting</div>
+                            <div class="profile-detail"><span>Interests:</span> Block-based games, Creative mode</div>
+                            <div class="profile-detail"><span>Lifestyle:</span> Young gamer, Creative builder</div>
+                            <div class="profile-detail"><span>Culture:</span> Minecraft community, YouTube gaming</div>
+                        </div>
+                        <div class="visual-elements">
+                            <div class="visual-elements-title">Possible Visual Elements Improvements</div>
+                            <div class="visual-element"><span>Color Palette:</span> More pixelated red with more blocky highlights</div>
+                            <div class="visual-element"><span>Shape:</span> More cubic with more rounded edges</div>
+                            <div class="visual-element"><span>Texture:</span> More 8-bit pixel art style</div>
+                            <div class="visual-element"><span>Style:</span> More Minecraft block aesthetic</div>
+                            <div class="visual-element"><span>Details:</span> More crafting table pattern</div>
+                            <div class="visual-element"><span>Finish:</span> More matte with clearer pixel grid effect</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="item">
+                <div class="item-content">
+                    <div class="item-image-container">
+                        <img src="img/strawberry7.jpg" alt="One Piece Strawberry Pencil Topper">
+                    </div>
+                    <div class="profile-section">
+                        <div class="item-title">One Piece Strawberry Pencil Topper</div>
+                        <div class="user-profile">
+                            <div class="profile-title">Target User Profile</div>
+                            <div class="profile-detail"><span>Age:</span> 12-16 years</div>
+                            <div class="profile-detail"><span>Gender:</span> Any</div>
+                            <div class="profile-detail"><span>Hobbies:</span> Netflix, Story writing</div>
+                            <div class="profile-detail"><span>Interests:</span> Devil Fruits, Adventure</div>
+                            <div class="profile-detail"><span>Lifestyle:</span> Any</div>
+                            <div class="profile-detail"><span>Culture:</span> One Piece, Anime</div>
+                        </div>
+                        <div class="visual-elements">
+                            <div class="visual-elements-title">Possible Visual Elements Improvements</div>
+                            <div class="visual-element"><span>Color Palette:</span> More manga-style red with more action lines</div>
+                            <div class="visual-element"><span>Shape:</span> More dynamic with stronger motion effects</div>
+                            <div class="visual-element"><span>Texture:</span> More comic book halftone dots</div>
+                            <div class="visual-element"><span>Style:</span> More anime-inspired design</div>
+                            <div class="visual-element"><span>Details:</span> More Straw Hat emblem</div>
+                            <div class="visual-element"><span>Finish:</span> More cel-shaded with more speed lines</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="item">
+                <div class="item-content">
+                    <div class="item-image-container">
+                        <img src="img/strawberry8.jpg" alt="Cubism Strawberry Pencil Topper">
+                    </div>
+                    <div class="profile-section">
+                        <div class="item-title">Cubism Strawberry Pencil Topper</div>
+                        <div class="user-profile">
+                            <div class="profile-title">Target User Profile</div>
+                            <div class="profile-detail"><span>Age:</span> 20-40 years</div>
+                            <div class="profile-detail"><span>Gender:</span> Any</div>
+                            <div class="profile-detail"><span>Hobbies:</span> Painting, Visiting Galleries</div>
+                            <div class="profile-detail"><span>Interests:</span> Picasso, Cubism</div>
+                            <div class="profile-detail"><span>Lifestyle:</span> Freelance Artist</div>
+                            <div class="profile-detail"><span>Culture:</span> East London</div>
+                        </div>
+                        <div class="visual-elements">
+                            <div class="visual-elements-title">Possible Visual Elements Improvements</div>
+                            <div class="visual-element"><span>Color Palette:</span> More geometric red with more abstract accents</div>
+                            <div class="visual-element"><span>Shape:</span> More fragmented and more angular</div>
+                            <div class="visual-element"><span>Texture:</span> More brush stroke patterns</div>
+                            <div class="visual-element"><span>Style:</span> More modern cubist interpretation</div>
+                            <div class="visual-element"><span>Details:</span> More multiple perspective views</div>
+                            <div class="visual-element"><span>Finish:</span> More matte with stronger impasto effect</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="item">
+                <div class="item-content">
+                    <div class="item-image-container">
+                        <img src="img/strawberry9.jpg" alt="Kawaii Strawberry Pencil Topper">
+                    </div>
+                    <div class="profile-section">
+                        <div class="item-title">Kawaii Strawberry Pencil Topper</div>
+                        <div class="user-profile">
+                            <div class="profile-title">Target User Profile</div>
+                            <div class="profile-detail"><span>Age:</span> 16-35 years</div>
+                            <div class="profile-detail"><span>Gender:</span> Any</div>
+                            <div class="profile-detail"><span>Hobbies:</span> Watching anime</div>
+                            <div class="profile-detail"><span>Interests:</span> Hayao Miyazaki, Fantasy Fiction</div>
+                            <div class="profile-detail"><span>Lifestyle:</span> Etsy DIY handcraft business owner</div>
+                            <div class="profile-detail"><span>Culture:</span> Online handcrafting community</div>
+                        </div>
+                        <div class="visual-elements">
+                            <div class="visual-elements-title">Possible Visual Elements Improvements</div>
+                            <div class="visual-element"><span>Color Palette:</span> Softer red with more pastel rainbow</div>
+                            <div class="visual-element"><span>Shape:</span> More super-deformed cute style</div>
+                            <div class="visual-element"><span>Texture:</span> More fluffy with more sparkle details</div>
+                            <div class="visual-element"><span>Style:</span> More Japanese kawaii aesthetic</div>
+                            <div class="visual-element"><span>Details:</span> More heart-shaped seeds</div>
+                            <div class="visual-element"><span>Finish:</span> More glossy with more iridescent effect</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <a href='https://www.youtube.com/@tortorkeneducation'>
+                🐢 Tortorken Education ©2025
+            </a><br> <a href='https://buymeacoffee.com/beatsaway'>☕Buy Me a Coffee</a>
+        </footer>
+    </div>
+
+    <script>
+        // Load YouTube IFrame API
+        var tag = document.createElement('script');
+        tag.src = "https://www.youtube.com/iframe_api";
+        var firstScriptTag = document.getElementsByTagName('script')[0];
+        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+        var player;
+        function onYouTubeIframeAPIReady() {
+            const baseWidth = 640; // Standard YouTube size
+            const baseHeight = 360; // 16:9 aspect ratio
+            
+            player = new YT.Player('player', {
+                height: baseHeight,
+                width: baseWidth,
+                videoId: '4rrb15GaTyM',
+                playerVars: {
+                    'autoplay': 1,
+                    'mute': 1,
+                    'controls': 0,
+                    'rel': 0,
+                    'modestbranding': 1,
+                    'loop': 1,
+                    'playlist': '4rrb15GaTyM'
+                },
+                events: {
+                    'onReady': onPlayerReady
+                }
+            });
+        }
+
+        function onPlayerReady(event) {
+            event.target.playVideo();
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const items = document.querySelectorAll('.item');
+            let currentIndex = 0;
+            let lastKeyPressTime = Date.now();
+            let autoScrollInterval;
+            let isAutoScrollEnabled = false;
+            const toggleButton = document.getElementById('autoScrollToggle');
+
+            function scrollToNextItem() {
+                // Remove highlight from current item
+                items[currentIndex].style.boxShadow = '0 3px 10px rgba(0, 0, 0, 0.1)';
+                
+                // Move to next item
+                currentIndex = (currentIndex + 1) % items.length;
+                
+                // Add highlight to new current item
+                items[currentIndex].style.boxShadow = '0 0 15px rgba(230, 92, 79, 0.5)';
+                
+                // Scroll to the new item
+                items[currentIndex].scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+            }
+
+            function scrollToPreviousItem() {
+                // Remove highlight from current item
+                items[currentIndex].style.boxShadow = '0 3px 10px rgba(0, 0, 0, 0.1)';
+                
+                // Move to previous item (or last if at first)
+                currentIndex = (currentIndex - 1 + items.length) % items.length;
+                
+                // Add highlight to new current item
+                items[currentIndex].style.boxShadow = '0 0 15px rgba(230, 92, 79, 0.5)';
+                
+                // Scroll to the new item
+                items[currentIndex].scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+            }
+
+            function startAutoScroll() {
+                if (!isAutoScrollEnabled) return;
+                autoScrollInterval = setInterval(() => {
+                    const currentTime = Date.now();
+                    if (currentTime - lastKeyPressTime >= 6000) { // 6 seconds
+                        scrollToNextItem();
+                        lastKeyPressTime = Date.now(); // Reset timer after auto-scroll
+                    }
+                }, 1000); // Check every second
+            }
+
+            function stopAutoScroll() {
+                clearInterval(autoScrollInterval);
+            }
+
+            function toggleAutoScroll() {
+                isAutoScrollEnabled = !isAutoScrollEnabled;
+                toggleButton.textContent = isAutoScrollEnabled ? 'Disable Auto Scroll' : 'Enable Auto Scroll';
+                toggleButton.classList.toggle('active');
+                
+                if (isAutoScrollEnabled) {
+                    startAutoScroll();
+                } else {
+                    stopAutoScroll();
+                }
+            }
+
+            toggleButton.addEventListener('click', toggleAutoScroll);
+
+            document.addEventListener('keydown', function(event) {
+                if (event.key === 'ArrowDown') {
+                    event.preventDefault();
+                    lastKeyPressTime = Date.now();
+                    scrollToNextItem();
+                } else if (event.key === 'ArrowUp') {
+                    event.preventDefault();
+                    lastKeyPressTime = Date.now();
+                    scrollToPreviousItem();
+                }
+            });
+
+            // Initialize first item highlight
+            items[0].style.boxShadow = '0 0 15px rgba(230, 92, 79, 0.5)';
+        });
+    </script>
+</body>
+</html>
