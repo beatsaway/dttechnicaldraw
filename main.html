@@ -20,6 +20,16 @@
   height: 100vh;
   background-color: #f8f9fa;
 }
+ footer {
+            position: fixed;
+            bottom: 10px;
+            right: 20px;
+            text-align: right;
+            font-family: Arial, sans-serif;
+            font-size: 14px;
+            color: #666;
+            z-index: 1000;
+        }
 
 .board {
   position: relative;
@@ -257,7 +267,12 @@ circle {
       <button class="projection-button" data-shape="3" data-type="perspective">One Point Perspective</button>
     </div>
 </div>
-
+    <footer>
+        <a href='https://www.youtube.com/@tortorkeneducation' class="nodeco">
+            🐢 Tortorken Education ©2025
+        </a><br>
+        <a href='https://buymeacoffee.com/beatsaway' class="nodeco">☕Buy Me a Coffee</a>
+    </footer>
 <script>
   let dotsVisible = true;
   function toggleDotsVisibility() {
