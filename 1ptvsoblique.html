@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fullscreen Canvas with Lasso Tool</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #f0f0f0;
+        }
+        
+        #canvas {
+            display: block;
+            background-color: white;
+        }
+        
+        .toolbar {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .tool-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .tool-group:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .tool-group-title {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .tool-button {
+            font-size: 14px;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 4px;
+            padding: 8px 12px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            user-select: none;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            transition: all 0.2s ease;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            min-width: 120px;
+        }
+        
+        .tool-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+            background: white;
+        }
+        
+        .tool-button.active {
+            background-color: #e3f2fd;
+            border-color: #2196f3;
+            color: #1976d2;
+        }
+        
+        #status {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-family: Arial, sans-serif;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        footer {
+            position: fixed;
+            bottom: 10px;
+            right: 20px;
+            text-align: right;
+            font-family: Arial, sans-serif;
+            font-size: 14px;
+            color: #666;
+            z-index: 1000;
+        }
+
+        .nodeco {
+            text-decoration: none;
+            color: inherit;
+            transition: color 0.2s ease;
+        }
+
+        .nodeco:hover {
+            color: #2196f3;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div class="toolbar">
+        <div class="tool-group">
+            <div class="tool-group-title">Drawing Tools</div>
+            <div id="toggleLasso" class="tool-button" title="Toggle Lasso Mode">Lasso Tool</div>
+            <div id="clearShapes" class="tool-button" title="Clear All Shapes">Clear Canvas</div>
+        </div>
+        <div class="tool-group">
+            <div class="tool-group-title">Perspective Tools</div>
+            <div id="togglePerspective" class="tool-button" title="Toggle One Point Perspective">One Point Perspective</div>
+            <div id="togglePerspectiveBase" class="tool-button" title="Toggle One Point Perspective Base">Perspective Base</div>
+        </div>
+        <div class="tool-group">
+            <div class="tool-group-title">Oblique Tools</div>
+            <div id="toggleOblique" class="tool-button" title="Toggle Oblique Projection">Oblique Projection</div>
+            <div id="toggleBase" class="tool-button" title="Toggle Base Fill">Oblique Base</div>
+        </div>
+    </div>
+    <div id="status">Lasso Mode: Off | Shapes: 0 | Oblique: Off | Base Fill: Off | One Point: Off | Perspective Base: Off</div>
+    <div id="vp" title="Vanishing Point (Drag Me)" style="position: absolute; top: 300px; left: 300px; width: 16px; height: 16px; background-color: black; border-radius: 50%; cursor: move; user-select: none; z-index: 100; display: flex; justify-content: center; align-items: center; color: white; font-size: 8px; font-family: Arial, sans-serif;">VP</div>
+    <footer>
+        <a href='https://www.youtube.com/@tortorkeneducation' class="nodeco">
+            🐢 Tortorken Education ©2025
+        </a><br>
+        <a href='https://buymeacoffee.com/beatsaway' class="nodeco">☕Buy Me a Coffee</a>
+    </footer>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const toggleButton = document.getElementById('toggleLasso');
+        const statusDisplay = document.getElementById('status');
+        const vpDot = document.getElementById('vp');
+        
+        // State variables
+        let lassoMode = false;
+        let points = [];
+        let isDrawing = false;
+        let shapes = []; // Array to store completed shapes
+        let obliqueMode = false; // For toggling oblique projection
+        let baseMode = false; // For toggling base fill
+        let perspectiveMode = false; // For toggling 1-point perspective
+        let perspectiveBaseMode = false; // For toggling 1-point perspective base
+        let vpPosition = { x: 300, y: 300 }; // Initial VP position
+        
+        // Set canvas to full screen
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            redraw();
+        }
+        
+        // Initialize
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+        
+        // Toggle lasso mode
+        toggleButton.addEventListener('click', () => {
+            lassoMode = !lassoMode;
+            toggleButton.classList.toggle('active');
+            updateStatus();
+            
+            if (!lassoMode) {
+                // Cancel current lasso operation when turning off
+                points = [];
+                redraw();
+            }
+            
+            // Change cursor style based on mode
+            canvas.style.cursor = lassoMode ? 'crosshair' : 'default';
+        });
+
+        // Clear button functionality
+        const clearButton = document.getElementById('clearShapes');
+        clearButton.addEventListener('click', () => {
+            shapes = [];
+            updateStatus();
+            redraw();
+        });
+
+        // Perspective button functionality
+        const perspectiveButton = document.getElementById('togglePerspective');
+        perspectiveButton.addEventListener('click', () => {
+            perspectiveMode = !perspectiveMode;
+            perspectiveButton.classList.toggle('active');
+            vpDot.style.display = perspectiveMode ? 'flex' : 'none';
+            updateStatus();
+            redraw();
+        });
+
+        // Perspective base button functionality
+        const perspectiveBaseButton = document.getElementById('togglePerspectiveBase');
+        perspectiveBaseButton.addEventListener('click', () => {
+            perspectiveBaseMode = !perspectiveBaseMode;
+            perspectiveBaseButton.classList.toggle('active');
+            if (perspectiveBaseMode && !perspectiveMode) {
+                perspectiveMode = true;
+                perspectiveButton.classList.add('active');
+                vpDot.style.display = 'flex';
+            }
+            updateStatus();
+            redraw();
+        });
+
+        // Oblique button functionality
+        const obliqueButton = document.getElementById('toggleOblique');
+        obliqueButton.addEventListener('click', () => {
+            obliqueMode = !obliqueMode;
+            obliqueButton.classList.toggle('active');
+            updateStatus();
+            redraw();
+        });
+
+        // Base button functionality
+        const baseButton = document.getElementById('toggleBase');
+        baseButton.addEventListener('click', () => {
+            baseMode = !baseMode;
+            baseButton.classList.toggle('active');
+            updateStatus();
+            redraw();
+        });
+        
+        // Make VP dot draggable
+        let isDraggingVP = false;
+        
+        vpDot.addEventListener('mousedown', (e) => {
+            isDraggingVP = true;
+            e.preventDefault(); // Prevent text selection
+        });
+        
+        document.addEventListener('mousemove', (e) => {
+            if (!isDraggingVP) return;
+            
+            // Update VP position
+            vpPosition.x = e.clientX;
+            vpPosition.y = e.clientY;
+            
+            // Update VP dot position
+            vpDot.style.left = (vpPosition.x - 8) + 'px'; // Center dot on cursor
+            vpDot.style.top = (vpPosition.y - 8) + 'px';
+            
+            // Redraw if in perspective mode
+            if (perspectiveMode) {
+                redraw();
+            }
+        });
+        
+        document.addEventListener('mouseup', () => {
+            isDraggingVP = false;
+        });
+        
+        // Update status function
+        function updateStatus() {
+            statusDisplay.textContent = `Lasso Mode: ${lassoMode ? 'On' : 'Off'} | Shapes: ${shapes.length} | Oblique: ${obliqueMode ? 'On' : 'Off'} | Base Fill: ${baseMode ? 'On' : 'Off'} | One Point: ${perspectiveMode ? 'On' : 'Off'} | Perspective Base: ${perspectiveBaseMode ? 'On' : 'Off'}`;
+        }
+        
+        // Handle canvas clicks
+        canvas.addEventListener('click', (e) => {
+            if (!lassoMode) return;
+            
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            // First point or adding more points
+            if (points.length === 0) {
+                // Start new lasso
+                points.push({x, y});
+                isDrawing = true;
+            } else {
+                // Check if click is near the first point to close the shape
+                const firstPoint = points[0];
+                const distance = Math.sqrt(Math.pow(x - firstPoint.x, 2) + Math.pow(y - firstPoint.y, 2));
+                
+                if (points.length > 2 && distance < 20) {
+                    // Close the shape by connecting to the first point
+                    completeShape();
+                } else {
+                    // Add new point
+                    points.push({x, y});
+                }
+            }
+            
+            redraw();
+        });
+        
+        // Handle mouse move to show preview line
+        canvas.addEventListener('mousemove', (e) => {
+            if (!lassoMode || !isDrawing || points.length === 0) return;
+            
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            redraw();
+            
+            // Draw preview line
+            const lastPoint = points[points.length - 1];
+            ctx.beginPath();
+            ctx.moveTo(lastPoint.x, lastPoint.y);
+            ctx.lineTo(x, y);
+            ctx.strokeStyle = '#999';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([5, 3]);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            
+            // Check if near first point to show potential closing
+            if (points.length > 2) {
+                const firstPoint = points[0];
+                const distance = Math.sqrt(Math.pow(x - firstPoint.x, 2) + Math.pow(y - firstPoint.y, 2));
+                
+                if (distance < 20) {
+                    // Highlight first point to indicate possible closure
+                    ctx.beginPath();
+                    ctx.arc(firstPoint.x, firstPoint.y, 8, 0, Math.PI * 2);
+                    ctx.fillStyle = 'rgba(255, 200, 50, 0.5)';
+                    ctx.fill();
+                }
+            }
+        });
+        
+        // Complete the shape
+        function completeShape() {
+            // Connect back to the first point
+            points.push({...points[0]});
+            
+            // Generate a random color
+            const r = Math.floor(Math.random() * 255);
+            const g = Math.floor(Math.random() * 255);
+            const b = Math.floor(Math.random() * 255);
+            const color = `rgba(${r}, ${g}, ${b}, 0.3)`;
+            const strokeColor = `rgb(${r}, ${g}, ${b})`;
+            
+            // Store the shape in our shapes array
+            shapes.push({
+                points: [...points],
+                fillColor: color,
+                strokeColor: strokeColor
+            });
+            
+            // Update the status to show shape count
+            updateStatus();
+            
+            // Reset for next shape
+            isDrawing = false;
+            points = [];
+            
+            // Redraw to show all shapes
+            redraw();
+        }
+        
+        // Function to calculate the base shape points for oblique projection
+        function calculateObliqueBasePoints(points, obliqueLength) {
+            const basePoints = [];
+            
+            // For each point, calculate the corresponding base point
+            for (let i = 0; i < points.length; i++) {
+                const point = points[i];
+                // Calculate end point of oblique line (45 degrees upward, obliqueLength px length)
+                const baseX = point.x + obliqueLength * Math.cos(Math.PI * 7/4); // 315 degrees in radians (top right)
+                const baseY = point.y + obliqueLength * Math.sin(Math.PI * 7/4);
+                basePoints.push({x: baseX, y: baseY});
+            }
+            
+            return basePoints;
+        }
+        
+        // Function to calculate perspective base points that form parallel lines to original shape
+        function calculatePerspectiveBasePoints(points, vpPos) {
+            const basePoints = [];
+            const ratio = 0.3; // How far along the perspective line to place the base points
+            
+            // First, generate points along the perspective lines
+            for (let i = 0; i < points.length; i++) {
+                const point = points[i];
+                const baseX = point.x + ratio * (vpPos.x - point.x);
+                const baseY = point.y + ratio * (vpPos.y - point.y);
+                basePoints.push({x: baseX, y: baseY});
+            }
+            
+            return basePoints;
+        }
+        
+        // Redraw the canvas
+        function redraw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw all saved shapes
+            for (const shape of shapes) {
+                if (shape.points.length < 3) continue;
+                
+                // Draw 1-point perspective base shape if perspective base mode is on
+                if (perspectiveBaseMode && perspectiveMode) {
+                    const perspectiveBasePoints = calculatePerspectiveBasePoints(shape.points, vpPosition);
+                    
+                    // Draw the perspective base shape - connecting the base points with lines
+                    // that are parallel to the original shape's lines
+                    ctx.beginPath();
+                    ctx.moveTo(perspectiveBasePoints[0].x, perspectiveBasePoints[0].y);
+                    
+                    for (let i = 1; i < perspectiveBasePoints.length; i++) {
+                        ctx.lineTo(perspectiveBasePoints[i].x, perspectiveBasePoints[i].y);
+                    }
+                    
+                    ctx.closePath();
+                    // Use a different shade for the perspective base
+                    const baseColor = shape.fillColor.replace('0.3', '0.2');
+                    ctx.fillStyle = baseColor;
+                    ctx.fill();
+                    ctx.strokeStyle = shape.strokeColor;
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                    
+                    // Draw connecting lines between original shape points and perspective base points
+                    for (let i = 0; i < shape.points.length - 1; i++) { // Skip last point as it's duplicate of first
+                        const point = shape.points[i];
+                        const basePoint = perspectiveBasePoints[i];
+                        
+                        ctx.beginPath();
+                        ctx.moveTo(point.x, point.y);
+                        ctx.lineTo(basePoint.x, basePoint.y);
+                        ctx.strokeStyle = '#444444';
+                        ctx.lineWidth = 0.5;
+                        ctx.setLineDash([2, 3]); // Dashed line with perspective style
+                        ctx.stroke();
+                        ctx.setLineDash([]); // Reset to solid line
+                        
+                        // Draw a dot at the base point
+                        ctx.beginPath();
+                        ctx.arc(basePoint.x, basePoint.y, 2, 0, Math.PI * 2);
+                        ctx.fillStyle = '#666666';
+                        ctx.fill();
+                    }
+                    
+                    // Draw perspective lines continuing to VP
+                    for (let i = 0; i < perspectiveBasePoints.length - 1; i++) { // Skip last point as it's duplicate of first
+                        const basePoint = perspectiveBasePoints[i];
+                        
+                        ctx.beginPath();
+                        ctx.moveTo(basePoint.x, basePoint.y);
+                        ctx.lineTo(vpPosition.x, vpPosition.y);
+                        ctx.strokeStyle = '#444444';
+                        ctx.lineWidth = 0.3;
+                        ctx.setLineDash([2, 4]); // Even more faded dashed line
+                        ctx.stroke();
+                        ctx.setLineDash([]); // Reset to solid line
+                    }
+                }
+                
+                // Draw base shape if baseMode is on and obliqueMode is on
+                if (baseMode && obliqueMode) {
+                    const basePoints = calculateObliqueBasePoints(shape.points, 50);
+                    
+                    // Draw the base shape (connecting all corresponding points)
+                    ctx.beginPath();
+                    ctx.moveTo(basePoints[0].x, basePoints[0].y);
+                    
+                    for (let i = 1; i < basePoints.length; i++) {
+                        ctx.lineTo(basePoints[i].x, basePoints[i].y);
+                    }
+                    
+                    ctx.closePath();
+                    // Use a darker shade of the shape color for the base
+                    const baseColor = shape.fillColor.replace('0.3', '0.15');
+                    ctx.fillStyle = baseColor;
+                    ctx.fill();
+                    ctx.strokeStyle = shape.strokeColor;
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                    
+                    // Draw connecting lines between original shape and base shape
+                    for (let i = 0; i < shape.points.length - 1; i++) { // Skip last point as it's duplicate of first
+                        const point = shape.points[i];
+                        const basePoint = basePoints[i];
+                        
+                        ctx.beginPath();
+                        ctx.moveTo(point.x, point.y);
+                        ctx.lineTo(basePoint.x, basePoint.y);
+                        ctx.strokeStyle = shape.strokeColor;
+                        ctx.lineWidth = 1;
+                        ctx.setLineDash([4, 2]); // Dashed line
+                        ctx.stroke();
+                        ctx.setLineDash([]); // Reset to solid line
+                    }
+                }
+                
+                // Draw the original shape
+                ctx.beginPath();
+                ctx.moveTo(shape.points[0].x, shape.points[0].y);
+                
+                for (let i = 1; i < shape.points.length; i++) {
+                    ctx.lineTo(shape.points[i].x, shape.points[i].y);
+                }
+                
+                ctx.closePath();
+                ctx.fillStyle = shape.fillColor;
+                ctx.fill();
+                ctx.strokeStyle = shape.strokeColor;
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                
+                // Draw 1-point perspective lines if perspective mode is on (and not already handled by perspective base mode)
+                if (perspectiveMode && !perspectiveBaseMode) {
+                    // For each point in the shape, draw a line to the vanishing point
+                    for (let i = 0; i < shape.points.length - 1; i++) { // Skip last point as it's duplicate of first
+                        const point = shape.points[i];
+                        
+                        // Draw the perspective line to VP
+                        ctx.beginPath();
+                        ctx.moveTo(point.x, point.y);
+                        ctx.lineTo(vpPosition.x, vpPosition.y);
+                        ctx.strokeStyle = '#444444'; // Different color from oblique lines
+                        ctx.lineWidth = 0.5;
+                        ctx.setLineDash([2, 3]); // Different dash pattern
+                        ctx.stroke();
+                        ctx.setLineDash([]); // Reset to solid line
+                    }
+                }
+                
+                // Draw oblique projection lines if oblique mode is on (and not already handled by base mode)
+                if (obliqueMode && !baseMode) {
+                    // For each point in the shape, draw an oblique line
+                    for (let i = 0; i < shape.points.length - 1; i++) { // Skip last point as it's duplicate of first
+                        const point = shape.points[i];
+                        
+                        // Calculate end point of oblique line (45 degrees upward, 50px length)
+                        const obliqueX = point.x + 50 * Math.cos(Math.PI * 7/4); // 315 degrees in radians (top right)
+                        const obliqueY = point.y + 50 * Math.sin(Math.PI * 7/4);
+                        
+                        // Draw the oblique line
+                        ctx.beginPath();
+                        ctx.moveTo(point.x, point.y);
+                        ctx.lineTo(obliqueX, obliqueY);
+                        ctx.strokeStyle = shape.strokeColor;
+                        ctx.lineWidth = 1;
+                        ctx.setLineDash([4, 2]); // Dashed line
+                        ctx.stroke();
+                        ctx.setLineDash([]); // Reset to solid line
+                    }
+                }
+            }
+            
+            // Draw the current path
+            if (points.length > 0) {
+                ctx.beginPath();
+                ctx.moveTo(points[0].x, points[0].y);
+                
+                for (let i = 1; i < points.length; i++) {
+                    ctx.lineTo(points[i].x, points[i].y);
+                }
+                
+                ctx.strokeStyle = '#333';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                
+                // Draw points
+                for (let i = 0; i < points.length; i++) {
+                    const point = points[i];
+                    
+                    // First point gets special styling
+                    if (i === 0) {
+                        ctx.beginPath();
+                        ctx.arc(point.x, point.y, 6, 0, Math.PI * 2);
+                        ctx.fillStyle = '#ff6b6b';
+                        ctx.fill();
+                        ctx.strokeStyle = '#333';
+                        ctx.lineWidth = 2;
+                        ctx.stroke();
+                    } else {
+                        ctx.beginPath();
+                        ctx.arc(point.x, point.y, 4, 0, Math.PI * 2);
+                        ctx.fillStyle = '#4ecdc4';
+                        ctx.fill();
+                    }
+                    
+                    // Draw oblique line from current points if in oblique mode
+                    if (obliqueMode) {
+                        const obliqueX = point.x + 50 * Math.cos(Math.PI * 7/4); // 315 degrees in radians (top right)
+                        const obliqueY = point.y + 50 * Math.sin(Math.PI * 7/4);
+                        
+                        ctx.beginPath();
+                        ctx.moveTo(point.x, point.y);
+                        ctx.lineTo(obliqueX, obliqueY);
+                        ctx.strokeStyle = '#333';
+                        ctx.lineWidth = 1;
+                        ctx.setLineDash([4, 2]);
+                        ctx.stroke();
+                        ctx.setLineDash([]);
+                        
+                        // Draw preview of base point if in base mode
+                        if (baseMode) {
+                            ctx.beginPath();
+                            ctx.arc(obliqueX, obliqueY, 3, 0, Math.PI * 2);
+                            ctx.fillStyle = '#ff9900';
+                            ctx.fill();
+                        }
+                    }
+                    
+                    // Draw perspective previews
+                    if (perspectiveMode) {
+                        if (perspectiveBaseMode) {
+                            // If perspective base mode is on, calculate base point
+                            const ratio = 0.3;
+                            const baseX = point.x + ratio * (vpPosition.x - point.x);
+                            const baseY = point.y + ratio * (vpPosition.y - point.y);
+                            
+                            // Draw to base point
+                            ctx.beginPath();
+                            ctx.moveTo(point.x, point.y);
+                            ctx.lineTo(baseX, baseY);
+                            ctx.strokeStyle = '#444444';
+                            ctx.lineWidth = 0.5;
+                            ctx.setLineDash([2, 3]);
+                            ctx.stroke();
+                            ctx.setLineDash([]);
+                            
+                            // Draw from base point to VP
+                            ctx.beginPath();
+                            ctx.moveTo(baseX, baseY);
+                            ctx.lineTo(vpPosition.x, vpPosition.y);
+                            ctx.strokeStyle = '#444444';
+                            ctx.lineWidth = 0.3;
+                            ctx.setLineDash([2, 4]);
+                            ctx.stroke();
+                            ctx.setLineDash([]);
+                            
+                            // Draw a dot at the base point
+                            ctx.beginPath();
+                            ctx.arc(baseX, baseY, 2, 0, Math.PI * 2);
+                            ctx.fillStyle = '#666666';
+                            ctx.fill();
+                        } else {
+                            // Just draw straight to VP
+                            ctx.beginPath();
+                            ctx.moveTo(point.x, point.y);
+                            ctx.lineTo(vpPosition.x, vpPosition.y);
+                            ctx.strokeStyle = '#444444';
+                            ctx.lineWidth = 0.5;
+                            ctx.setLineDash([2, 3]);
+                            ctx.stroke();
+                            ctx.setLineDash([2, 3]);
+                            ctx.stroke();
+                            ctx.setLineDash([]);
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</body>
+</html>
