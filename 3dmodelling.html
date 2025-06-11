@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lasso Tool with 3D View</title>
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://unpkg.com/three@0.152.2/build/three.module.min.js",
+          "three/addons/": "https://unpkg.com/three@0.152.2/examples/jsm/"
+        }
+      }
+    </script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #f0f0f0;
+            font-family: Arial, sans-serif;
+        }
+        
+        .container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+        
+        .drawing-section {
+            flex: 1;
+            position: relative;
+            background: white;
+        }
+        
+        #canvas {
+            display: block;
+            background-color: white;
+            width: 100%;
+            height: 100%;
+        }
+        
+        .toolbar {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .tool-button {
+            font-size: 14px;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 4px;
+            padding: 8px 12px;
+            user-select: none;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            transition: all 0.2s ease;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+        
+        .tool-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+            background: white;
+        }
+        
+        .tool-button.active {
+            background-color: #e3f2fd;
+            border-color: #2196f3;
+            color: #1976d2;
+        }
+        
+        .tool-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        #status {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 10px 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .threejs-section {
+            flex: 1;
+            background: #000;
+            border-top: 2px solid #ddd;
+            position: relative;
+        }
+        
+        #threejsContainer {
+            width: 100%;
+            height: 100%;
+            pointer-events: auto;
+        }
+        
+        .threejs-controls {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: white;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 12px;
+        }
+        
+        #threejsOverlay {
+            display: none;
+            position: fixed;
+            top: 0vh;
+            left: 0vw;
+            width: 100%;
+            height: 100%;
+            background: #222;
+            z-index: 1000;
+            border-radius: 18px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+        }
+        #threejsOverlay #close3d {
+            position: absolute;
+            top: 12px;
+            right: 18px;
+            z-index: 1001;
+            font-size: 2rem;
+            background: none;
+            border: none;
+            color: #fff;
+            cursor: pointer;
+        }
+        #threejsOverlay #threejsContainer {
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="drawing-section">
+            <canvas id="canvas"></canvas>
+            <div class="toolbar">
+                <div id="toggleLasso" class="tool-button">Lasso Tool</div>
+                <div id="clearShapes" class="tool-button">Clear</div>
+                <div id="view3dBtn" class="tool-button" disabled>Generate 3D</div>
+                <input type="color" id="meshColorPicker" value="#ecd9a5" title="Mesh Color" style="width:32px;height:32px;border:none;outline:1px solid #aaa;cursor:pointer;vertical-align:middle;">
+            </div>
+            <div id="status">Lasso Mode: Off | Shapes: 0</div>
+        </div>
+    </div>
+    <div id="threejsOverlay">
+        <button id="close3d">✕</button>
+        <div id="threejsContainer"></div>
+    </div>
+
+    <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const toggleButton = document.getElementById('toggleLasso');
+    const clearButton = document.getElementById('clearShapes');
+    const view3dBtn = document.getElementById('view3dBtn');
+    const statusDisplay = document.getElementById('status');
+    const threejsContainer = document.getElementById('threejsContainer');
+    const threejsOverlay = document.getElementById('threejsOverlay');
+    const close3dBtn = document.getElementById('close3d');
+    
+
+// State variables
+let lassoMode = false;
+let points = [];
+let isDrawing = false;
+let shapes = [
+  {
+    points: [
+      { x: 360, y: 80 },
+      { x: 400, y: 120 },
+      { x: 420, y: 120 },
+      { x: 460, y: 80 },
+      { x: 460, y: 160 },
+      { x: 440, y: 200 },
+      { x: 380, y: 200 },
+      { x: 360, y: 160 },
+      { x: 360, y: 80 }
+    ],
+    fillColor: "rgba(83, 198, 134, 0.3)",
+    strokeColor: "rgb(83, 198, 134)",
+    inside: false,
+    highlighted: false
+  },
+  {
+    points: [
+      { x: 480, y: 80 },
+      { x: 480, y: 160 },
+      { x: 500, y: 200 },
+      { x: 520, y: 200 },
+      { x: 520, y: 160 },
+      { x: 540, y: 160 },
+      { x: 540, y: 200 },
+      { x: 560, y: 200 },
+      { x: 580, y: 160 },
+      { x: 580, y: 80 },
+      { x: 540, y: 120 },
+      { x: 520, y: 120 },
+      { x: 480, y: 80 }
+    ],
+    fillColor: "rgba(103, 93, 45, 0.3)",
+    strokeColor: "rgb(103, 93, 45)",
+    inside: false,
+    highlighted: false
+  },
+  {
+    points: [
+      { x: 600, y: 80 },
+      { x: 600, y: 160 },
+      { x: 620, y: 200 },
+      { x: 680, y: 200 },
+      { x: 700, y: 160 },
+      { x: 700, y: 80 },
+      { x: 660, y: 120 },
+      { x: 640, y: 120 },
+      { x: 600, y: 80 }
+    ],
+    fillColor: "rgba(92, 229, 53, 0.3)",
+    strokeColor: "rgb(92, 229, 53)",
+    inside: false,
+    highlighted: false
+  }
+];
+
+// ...<rest of your code remains unchanged>...
+
+
+    let selectedShapeIndex = null;
+
+    // Helper function to darken a hex color
+function darkenColor(hexColor, factor = 0.7) {
+    // Remove the # if present
+    const hex = hexColor.replace('#', '');
+    
+    // Parse the hex color
+    const r = parseInt(hex.substr(0, 2), 16);
+    const g = parseInt(hex.substr(2, 2), 16);
+    const b = parseInt(hex.substr(4, 2), 16);
+    
+    // Darken each component
+    const newR = Math.floor(r * factor);
+    const newG = Math.floor(g * factor);
+    const newB = Math.floor(b * factor);
+    
+    // Convert back to hex
+    return (newR << 16) | (newG << 8) | newB;
+}
+    
+    // Three.js variables
+    let scene, camera, renderer, controls, animationId;
+    let meshObjects = [];
+    let selectedMeshIndices3D = [];
+    let flashPhase = 0;
+    let debugRaycastDot = null;
+    
+    // Set canvas to drawing section size
+    function resizeCanvas() {
+        const drawingSection = document.querySelector('.drawing-section');
+        canvas.width = drawingSection.clientWidth;
+        canvas.height = drawingSection.clientHeight;
+        redraw();
+    }
+    
+    // Initialize
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+    updateStatus();
+    redraw();
+    
+    // Setup 3D scene
+    function setup3D() {
+        cleanup3D();
+        threejsOverlay.style.display = 'block';
+        scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x87CEEB);
+        const containerRect = threejsContainer.getBoundingClientRect();
+        camera = new THREE.PerspectiveCamera(75, containerRect.width / containerRect.height, 0.1, 1000);
+        camera.position.set(0, 5, 15);
+        renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(containerRect.width, containerRect.height);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        threejsContainer.appendChild(renderer.domElement);
+        controls = new OrbitControls(camera, renderer.domElement);
+        controls.target.set(0, 0, 0);
+        controls.update();
+        controls.enablePan = true;
+        controls.mouseButtons = {
+            LEFT: THREE.MOUSE.ROTATE,
+            MIDDLE: THREE.MOUSE.DOLLY,
+            RIGHT: THREE.MOUSE.PAN
+        };
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.minDistance = 1;
+        controls.maxDistance = 50;
+        // Lighting: standard setup (one ambient, one directional)
+        scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        dirLight.position.set(5, 10, 7);
+        scene.add(dirLight);
+        // Create 3D shapes from drawn paths
+        createShapesFrom2D();
+        // Add raycast event for selection
+        renderer.domElement.addEventListener('pointerdown', on3DPointerDown);
+        // Add event listener for pointermove to update the debug dot
+        renderer.domElement.addEventListener('pointermove', on3DPointerMove);
+        // Start animation loop
+        animate();
+        // Handle resize for overlay
+        window.addEventListener('resize', resizeThreeJS, false);
+    }
+    
+    function resizeThreeJS() {
+        if (!renderer || !camera) return;
+        const containerRect = threejsContainer.getBoundingClientRect();
+        camera.aspect = containerRect.width / containerRect.height;
+        camera.updateProjectionMatrix();
+        renderer.setSize(containerRect.width, containerRect.height);
+    }
+    
+    // Create 3D shapes from 2D drawings
+    function createShapesFrom2D() {
+        meshObjects = [];
+        selectedMeshIndices3D = [];
+        flashPhase = 0;
+        // Helper: check if shapeA is inside shapeB
+        function isShapeInside(shapeA, shapeB) {
+            return shapeA.points.every(pt => isPointInPolygon(pt, shapeB.points));
+        }
+        // Helper: compute area of a shape (shoelace formula)
+        function shapeArea(shape) {
+            let area = 0;
+            const pts = shape.points;
+            for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) {
+                area += (pts[j].x + pts[i].x) * (pts[j].y - pts[i].y);
+            }
+            return Math.abs(area / 2);
+        }
+        // Get all shapes with at least 3 points
+        const allShapes = shapes.filter(shape => shape.points.length >= 3);
+        // Sort by area, largest to smallest
+        allShapes.sort((a, b) => shapeArea(b) - shapeArea(a));
+        // For each shape, create a mesh and a border
+        let meshColor = 0x4caf50;
+const meshColorPicker = document.getElementById('meshColorPicker');
+meshColor = parseInt(meshColorPicker.value.replace('#','0x'), 16);
+        for (let i = 0; i < allShapes.length; i++) {
+            const shapeObj = allShapes[i];
+            // Create main shape
+            const mainShape = new THREE.Shape();
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const scale = 0.01;
+            const firstPoint = shapeObj.points[0];
+            mainShape.moveTo((firstPoint.x - centerX) * scale, -(firstPoint.y - centerY) * scale);
+            for (let p = 1; p < shapeObj.points.length; p++) {
+                const point = shapeObj.points[p];
+                mainShape.lineTo((point.x - centerX) * scale, -(point.y - centerY) * scale);
+            }
+            // Extrude the shape
+            const extrudeSettings = {
+                depth: 0.25,
+                bevelEnabled: false,
+                steps: 2
+            };
+            const material = new THREE.MeshLambertMaterial({ color: meshColor });
+            material.depthTest = true;
+            material.transparent = true;
+            const geometry = new THREE.ExtrudeGeometry(mainShape, extrudeSettings);
+            const mesh = new THREE.Mesh(geometry, material);
+            mesh.castShadow = true;
+            mesh.receiveShadow = true;
+            mesh.userData = { meshIndex: i };
+            scene.add(mesh);
+            // Add border to mesh
+            const edges = new THREE.EdgesGeometry(geometry);
+            const borderMaterial = new THREE.LineBasicMaterial({ color: 0x000000, linewidth: 1 });
+            const line = new THREE.LineSegments(edges, borderMaterial);
+            mesh.add(line);
+            meshObjects.push(mesh);
+        }
+    }
+    // Listen for arrow key presses to move selected mesh in 3D view
+window.addEventListener('keydown', (e) => {
+    // Only if 3D overlay is open and a mesh is selected
+    if (threejsOverlay.style.display === 'block' && selectedMeshIndices3D.length > 0) {
+        // Choose how much to move per keypress
+        const moveStep = 0.2;
+
+        // For each selected mesh index, move the mesh
+        selectedMeshIndices3D.forEach(meshIdx => {
+            const mesh = meshObjects[meshIdx];
+            if (!mesh) return;
+
+            switch (e.key) {
+                case 'ArrowUp':
+                    mesh.position.z += moveStep;
+                    break;
+                case 'ArrowDown':
+                    mesh.position.z -= moveStep;
+                    break;
+                case 'ArrowLeft':
+                    mesh.position.x -= moveStep;
+                    break;
+                case 'ArrowRight':
+                    mesh.position.x += moveStep;
+                    break;
+                default:
+                    break;
+            }
+        });
+    }
+});
+    // Animation loop
+    function animate() {
+        animationId = requestAnimationFrame(animate);
+        controls && controls.update();
+        renderer.render(scene, camera);
+        if (meshObjects && meshObjects.length > 0) {
+            flashPhase += 0.05;
+            for (let i = 0; i < meshObjects.length; i++) {
+                const mesh = meshObjects[i];
+                if (mesh.material.transparent !== true) mesh.material.transparent = true;
+                // Find the border (LineSegments) child
+                let border = null;
+                for (let j = 0; j < mesh.children.length; j++) {
+                    if (mesh.children[j].type === 'LineSegments') {
+                        border = mesh.children[j];
+                        break;
+                    }
+                }
+                if (selectedMeshIndices3D.includes(i)) {
+                    const flashOpacity = 0.15 + 0.15 * Math.abs(Math.sin(flashPhase));
+                    mesh.material.opacity = flashOpacity;
+                    if (border && border.material) {
+                        border.material.transparent = true;
+                        border.material.opacity = flashOpacity;
+                    }
+                } else {
+                    mesh.material.opacity = 1.0;
+                    if (border && border.material) {
+                        border.material.transparent = false;
+                        border.material.opacity = 1.0;
+                    }
+                }
+            }
+        }
+    }
+    
+    // Cleanup 3D resources
+    function cleanup3D() {
+        if (animationId) {
+            cancelAnimationFrame(animationId);
+            animationId = null;
+        }
+        if (renderer) {
+            while (threejsContainer.firstChild) {
+                threejsContainer.removeChild(threejsContainer.firstChild);
+            }
+            renderer.dispose();
+            renderer = null;
+        }
+        if (scene) {
+            while (scene.children.length > 0) {
+                const child = scene.children[0];
+                scene.remove(child);
+                if (child.geometry) child.geometry.dispose();
+                if (child.material) child.material.dispose();
+            }
+            scene = null;
+        }
+        controls = null;
+        window.removeEventListener('resize', resizeThreeJS, false);
+        if (renderer && renderer.domElement) {
+            renderer.domElement.removeEventListener('pointerdown', on3DPointerDown);
+            renderer.domElement.removeEventListener('pointermove', on3DPointerMove);
+        }
+    }
+    
+    // Toggle lasso mode
+    toggleButton.addEventListener('click', () => {
+        lassoMode = !lassoMode;
+        toggleButton.classList.toggle('active');
+        updateStatus();
+        
+        if (!lassoMode) {
+            points = [];
+            redraw();
+        }
+        
+        canvas.style.cursor = lassoMode ? 'crosshair' : 'default';
+    });
+
+    // Clear shapes
+    clearButton.addEventListener('click', () => {
+        shapes = [];
+        points = [];
+        isDrawing = false;
+        updateStatus();
+        redraw();
+        setup3D(); // Refresh 3D view
+    });
+
+    // Generate 3D view
+    view3dBtn.addEventListener('click', () => {
+        setup3D();
+    });
+    
+    // Close 3D overlay
+    close3dBtn.addEventListener('click', () => {
+        threejsOverlay.style.display = 'none';
+        cleanup3D();
+    });
+    
+    // Update status
+    function updateStatus() {
+        statusDisplay.textContent = `Lasso Mode: ${lassoMode ? 'On' : 'Off'} | Shapes: ${shapes.length}`;
+        view3dBtn.disabled = shapes.length === 0;
+    }
+    
+    // Draw grid on canvas
+    function drawGrid() {
+        const gridSize = 20;
+        ctx.save();
+        ctx.strokeStyle = '#e0e0e0';
+        ctx.lineWidth = 1;
+        for (let x = 0; x < canvas.width; x += gridSize) {
+            ctx.beginPath();
+            ctx.moveTo(x, 0);
+            ctx.lineTo(x, canvas.height);
+            ctx.stroke();
+        }
+        for (let y = 0; y < canvas.height; y += gridSize) {
+            ctx.beginPath();
+            ctx.moveTo(0, y);
+            ctx.lineTo(canvas.width, y);
+            ctx.stroke();
+        }
+        ctx.restore();
+    }
+    
+    // Handle canvas clicks (lasso tool functionality)
+    canvas.addEventListener('click', (e) => {
+        if (lassoMode) {
+            const rect = canvas.getBoundingClientRect();
+            let x = e.clientX - rect.left;
+            let y = e.clientY - rect.top;
+            // Snap to grid
+            const gridSize = 20;
+            x = Math.round(x / gridSize) * gridSize;
+            y = Math.round(y / gridSize) * gridSize;
+            if (points.length === 0) {
+                points.push({x, y});
+                isDrawing = true;
+            } else {
+                const firstPoint = points[0];
+                const distance = Math.sqrt(Math.pow(x - firstPoint.x, 2) + Math.pow(y - firstPoint.y, 2));
+                if (points.length > 2 && distance < 20) {
+                    completeShape();
+                } else {
+                    points.push({x, y});
+                }
+            }
+            redraw();
+            return;
+        }
+        // Selection mode
+        const rect = canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        selectedShapeIndex = null;
+        // Check from topmost to bottom
+        for (let i = shapes.length - 1; i >= 0; i--) {
+            if (isPointInPolygon({x, y}, shapes[i].points)) {
+                selectedShapeIndex = i;
+                break;
+            }
+        }
+        redraw();
+    });
+    
+    // Handle mouse move for preview
+    canvas.addEventListener('mousemove', (e) => {
+        if (!lassoMode || !isDrawing || points.length === 0) return;
+        
+        const rect = canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        
+        redraw();
+        
+        // Draw preview line
+        const lastPoint = points[points.length - 1];
+        ctx.beginPath();
+        ctx.moveTo(lastPoint.x, lastPoint.y);
+        ctx.lineTo(x, y);
+        ctx.strokeStyle = '#999';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([5, 3]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        
+        // Highlight first point if close enough to close shape
+        if (points.length > 2) {
+            const firstPoint = points[0];
+            const distance = Math.sqrt(Math.pow(x - firstPoint.x, 2) + Math.pow(y - firstPoint.y, 2));
+            
+            if (distance < 20) {
+                ctx.beginPath();
+                ctx.arc(firstPoint.x, firstPoint.y, 8, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(255, 200, 50, 0.5)';
+                ctx.fill();
+            }
+        }
+    });
+    
+    // Point-in-polygon test (ray-casting algorithm)
+    function isPointInPolygon(point, polygon) {
+        let x = point.x, y = point.y;
+        let inside = false;
+        for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+            let xi = polygon[i].x, yi = polygon[i].y;
+            let xj = polygon[j].x, yj = polygon[j].y;
+            let intersect = ((yi > y) !== (yj > y)) &&
+                (x < (xj - xi) * (y - yi) / (yj - yi + 0.00001) + xi);
+            if (intersect) inside = !inside;
+        }
+        return inside;
+    }
+
+    // Check if all points of shapeA are inside shapeB
+    function isShapeInside(shapeA, shapeB) {
+        return shapeA.points.every(pt => isPointInPolygon(pt, shapeB.points));
+    }
+
+    // Complete shape
+    function completeShape() {
+        points.push({...points[0]});
+        const r = Math.floor(Math.random() * 255);
+        const g = Math.floor(Math.random() * 255);
+        const b = Math.floor(Math.random() * 255);
+        const color = `rgba(${r}, ${g}, ${b}, 0.3)`;
+        const strokeColor = `rgb(${r}, ${g}, ${b})`;
+        let newShape = {
+            points: [...points],
+            fillColor: color,
+            strokeColor: strokeColor,
+            inside: false,
+            highlighted: false
+        };
+        // Detect if inside any existing shape
+        for (let i = 0; i < shapes.length; i++) {
+            if (isShapeInside(newShape, shapes[i])) {
+                newShape.inside = true;
+                break;
+            }
+        }
+        shapes.push(newShape);
+        updateStatus();
+        isDrawing = false;
+        points = [];
+        redraw();
+    }
+    
+    // Redraw canvas
+    function redraw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        drawGrid();
+        
+        // Draw completed shapes
+        for (let idx = 0; idx < shapes.length; idx++) {
+            const shape = shapes[idx];
+            if (shape.points.length < 3) continue;
+            ctx.beginPath();
+            ctx.moveTo(shape.points[0].x, shape.points[0].y);
+            for (let i = 1; i < shape.points.length; i++) {
+                ctx.lineTo(shape.points[i].x, shape.points[i].y);
+            }
+            ctx.closePath();
+            // Highlight selected shape
+            if (idx === selectedShapeIndex) {
+                ctx.strokeStyle = 'red';
+                ctx.lineWidth = 3;
+            } else if (shape.inside && shape.highlighted) {
+                ctx.strokeStyle = 'red';
+                ctx.lineWidth = 3;
+            } else {
+                ctx.strokeStyle = '#000';
+                ctx.lineWidth = 3;
+            }
+            ctx.stroke();
+        }
+        
+        // Draw current path
+        if (points.length > 0) {
+            ctx.beginPath();
+            ctx.moveTo(points[0].x, points[0].y);
+            
+            for (let i = 1; i < points.length; i++) {
+                ctx.lineTo(points[i].x, points[i].y);
+            }
+            
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            
+            // Draw points
+            for (let i = 0; i < points.length; i++) {
+                const point = points[i];
+                
+                if (i === 0) {
+                    ctx.beginPath();
+                    ctx.arc(point.x, point.y, 6, 0, Math.PI * 2);
+                    ctx.fillStyle = '#ff6b6b';
+                    ctx.fill();
+                    ctx.strokeStyle = '#333';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                } else {
+                    ctx.beginPath();
+                    ctx.arc(point.x, point.y, 4, 0, Math.PI * 2);
+                    ctx.fillStyle = '#4ecdc4';
+                    ctx.fill();
+                }
+            }
+        }
+    }
+
+    // Right-click to toggle color of non-outermost shape under mouse
+    canvas.addEventListener('contextmenu', function(e) {
+        e.preventDefault();
+        const rect = canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        // Find the topmost (last) non-outermost shape under mouse
+        // Compute inside counts for all shapes
+        const insideCounts = shapes.map((shapeA, idxA) => {
+            let count = 0;
+            for (let idxB = 0; idxB < shapes.length; idxB++) {
+                if (idxA === idxB) continue;
+                if (isShapeInside(shapeA, shapes[idxB])) count++;
+            }
+            return count;
+        });
+        for (let i = shapes.length - 1; i >= 0; i--) {
+            const shape = shapes[i];
+            if (insideCounts[i] > 0 && isPointInPolygon({x, y}, shape.points)) {
+                shape.highlighted = !shape.highlighted;
+                redraw();
+                // Recalculate 3D mesh after toggling
+                if (typeof cleanup3D === 'function') cleanup3D();
+                if (typeof threejsOverlay !== 'undefined' && threejsOverlay.style.display === 'block') {
+                    setup3D();
+                }
+                break;
+            }
+        }
+    });
+
+    // Listen for Delete key to remove selected shape
+    window.addEventListener('keydown', (e) => {
+        if (selectedShapeIndex !== null && (e.key === 'Delete' || e.key === 'Backspace')) {
+            shapes.splice(selectedShapeIndex, 1);
+            selectedShapeIndex = null;
+            updateStatus();
+            redraw();
+            if (typeof cleanup3D === 'function') cleanup3D();
+            if (typeof threejsOverlay !== 'undefined' && threejsOverlay.style.display === 'block') {
+                setup3D();
+            }
+        }
+    });
+
+    // Spacebar event to capture 3D shape data
+    window.addEventListener('keydown', function(e) {
+        if (e.code === 'Space' && !e.repeat) {
+            // Log the raw drawing data
+            console.log('Raw Drawing Data (shapes array):', JSON.stringify(shapes, null, 2));
+            // Prepare data structure: list of shapes, each with points and info about holes
+            // We'll use the same logic as createShapesFrom2D to determine relationships
+            function isShapeInside(shapeA, shapeB) {
+                return shapeA.points.every(pt => isPointInPolygon(pt, shapeB.points));
+            }
+            function shapeArea(shape) {
+                let area = 0;
+                const pts = shape.points;
+                for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) {
+                    area += (pts[j].x + pts[i].x) * (pts[j].y - pts[i].y);
+                }
+                return Math.abs(area / 2);
+            }
+            const blackShapes = shapes
+                .map((shape, idx) => ({...shape, _idx: idx}))
+                .filter(shape => !shape.highlighted && shape.points.length >= 3);
+            blackShapes.sort((a, b) => shapeArea(b) - shapeArea(a));
+            const shapeData = [];
+            const usedAsHole = new Set();
+            for (let i = 0; i < blackShapes.length; i++) {
+                if (usedAsHole.has(i)) continue;
+                const outer = blackShapes[i];
+                let holes = [];
+                for (let j = i + 1; j < blackShapes.length; j++) {
+                    if (usedAsHole.has(j)) continue;
+                    if (isShapeInside(blackShapes[j], outer)) {
+                        holes.push({ points: blackShapes[j].points });
+                        usedAsHole.add(j);
+                    }
+                }
+                shapeData.push({
+                    outer: outer.points,
+                    holes: holes.map(h => h.points)
+                });
+            }
+            // Log the data as JSON
+            console.log('3D Shape Data:', JSON.stringify(shapeData, null, 2));
+        }
+    });
+
+    // Raycasting logic
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+    function on3DPointerDown(event) {
+        if (threejsOverlay.style.display !== 'block') return;
+        const rect = threejsContainer.getBoundingClientRect();
+        mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+        mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+        raycaster.setFromCamera(mouse, camera);
+        const intersects = raycaster.intersectObjects(meshObjects, false);
+        // Remove previous debug dot
+        if (debugRaycastDot && scene) {
+            scene.remove(debugRaycastDot);
+            debugRaycastDot.geometry.dispose();
+            debugRaycastDot.material.dispose();
+            debugRaycastDot = null;
+        }
+        if (intersects.length > 0) {
+            // Show a red dot at the intersection point
+            const point = intersects[0].point;
+            const dotGeometry = new THREE.SphereGeometry(0.05, 16, 16);
+            const dotMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+            debugRaycastDot = new THREE.Mesh(dotGeometry, dotMaterial);
+            debugRaycastDot.position.copy(point);
+            scene.add(debugRaycastDot);
+            // Find the parent mesh that has userData
+            let targetMesh = intersects[0].object;
+            while (targetMesh && !targetMesh.userData.hasOwnProperty('meshIndex')) {
+                targetMesh = targetMesh.parent;
+            }
+            if (targetMesh && targetMesh.userData.meshIndex !== undefined) {
+                const meshIdx = targetMesh.userData.meshIndex;
+                const currentIndex = selectedMeshIndices3D.indexOf(meshIdx);
+                if (currentIndex === -1) {
+                    selectedMeshIndices3D.push(meshIdx); // Add to selection
+                } else {
+                    selectedMeshIndices3D.splice(currentIndex, 1); // Remove from selection
+                }
+            }
+        }
+    }
+
+    function on3DPointerMove(event) {
+        if (threejsOverlay.style.display !== 'block') return;
+        const rect = threejsContainer.getBoundingClientRect();
+        mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+        mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+        raycaster.setFromCamera(mouse, camera);
+        const intersects = raycaster.intersectObjects(meshObjects, false);
+        // Remove previous debug dot
+        if (debugRaycastDot && scene) {
+            scene.remove(debugRaycastDot);
+            debugRaycastDot.geometry.dispose();
+            debugRaycastDot.material.dispose();
+            debugRaycastDot = null;
+        }
+        if (intersects.length > 0) {
+            // Show a red dot at the intersection point
+            const point = intersects[0].point;
+            const dotGeometry = new THREE.SphereGeometry(0.05, 16, 16);
+            const dotMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+            debugRaycastDot = new THREE.Mesh(dotGeometry, dotMaterial);
+            debugRaycastDot.position.copy(point);
+            scene.add(debugRaycastDot);
+        }
+    }
+    </script>
+</body>
+</html>
